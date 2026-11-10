@@ -1,0 +1,1023 @@
+!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Craft — AI Thumbnail Generator</title>
+    <meta name="description" content="A cozy, AI-powered thumbnail generator. Describe your idea and get a beautiful thumbnail crafted just for you." />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+    <style>
+        /* ─── CSS Reset & Tokens ───────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --cream: #f5efe6;
+            --cream-dark: #ede4d7;
+            --white-warm: #fdfaf6;
+            --brown: #8b6144;
+            --brown-dark: #6e4c33;
+            --brown-light: #c49a78;
+            --brown-muted: #b08060;
+            --sage: #7d9b76;
+            --sage-light: #a8c4a2;
+            --text-dark: #3a2c20;
+            --text-mid: #6b5240;
+            --text-soft: #9e8070;
+            --shadow: rgba(100, 65, 35, 0.12);
+            --shadow-deep: rgba(80, 50, 20, 0.20);
+            --radius-card: 28px;
+            --radius-btn: 50px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ─── Background & Layout ──────────────────────────────────── */
+        body {
+            min-height: 100vh;
+            background-color: var(--cream);
+            background-image:
+                radial-gradient(ellipse 80% 60% at 20% 10%, rgba(201, 173, 140, 0.25) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 90%, rgba(125, 155, 118, 0.12) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 70% 20%, rgba(196, 154, 120, 0.15) 0%, transparent 50%);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px 60px;
+            overflow-x: hidden;
+        }
+
+        /* ─── Noise grain overlay ────────────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        /* ─── Header ────────────────────────────────────────────────── */
+        header {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--brown) 0%, var(--brown-light) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(139, 97, 68, 0.35);
+        }
+
+        .logo-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: none;
+            stroke: var(--white-warm);
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .logo-name {
+            font-family: 'Caveat', cursive;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--brown);
+            letter-spacing: 0.5px;
+        }
+
+        .tagline {
+            font-size: 0.875rem;
+            color: var(--text-soft);
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        /* ─── Decorative dots ───────────────────────────────────────── */
+        .deco-dots {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 14px;
+        }
+
+        .deco-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--brown-light);
+            opacity: 0.4;
+        }
+
+        .deco-dots span:nth-child(2) {
+            background: var(--sage);
+            opacity: 0.5;
+        }
+
+        .deco-dots span:nth-child(3) {
+            opacity: 0.3;
+        }
+
+        /* ─── Main Card ─────────────────────────────────────────────── */
+        .card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 560px;
+            background: var(--white-warm);
+            border-radius: var(--radius-card);
+            padding: 40px 36px 36px;
+            box-shadow:
+                0 2px 6px var(--shadow),
+                0 8px 30px var(--shadow),
+                0 30px 80px var(--shadow-deep),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(200, 175, 148, 0.3);
+            transition: box-shadow var(--transition);
+        }
+
+        .card:hover {
+            box-shadow:
+                0 2px 6px var(--shadow),
+                0 12px 40px var(--shadow),
+                0 40px 100px var(--shadow-deep),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        /* Subtle inner card accent line */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--sage-light), var(--brown-light), var(--sage-light));
+            border-radius: 0 0 4px 4px;
+            opacity: 0.7;
+        }
+
+        /* ─── Card Header ───────────────────────────────────────────── */
+        .card-header {
+            margin-bottom: 28px;
+        }
+
+        .card-title {
+            font-family: 'Caveat', cursive;
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.2;
+            margin-bottom: 6px;
+        }
+
+        .card-subtitle {
+            font-size: 0.82rem;
+            color: var(--text-soft);
+            font-weight: 400;
+        }
+
+        /* ─── Step Indicator ────────────────────────────────────────── */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .step-pill {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--sage);
+            background: rgba(125, 155, 118, 0.12);
+            border: 1px solid rgba(125, 155, 118, 0.25);
+            border-radius: 20px;
+            padding: 3px 10px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* ─── Textarea ──────────────────────────────────────────────── */
+        .input-area {
+            position: relative;
+            margin-bottom: 22px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-mid);
+            margin-bottom: 10px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        #prompt-textarea {
+            width: 100%;
+            min-height: 130px;
+            padding: 18px 20px;
+            background: var(--cream);
+            border: 1.5px solid rgba(175, 145, 115, 0.3);
+            border-radius: 18px;
+            font-family: 'Caveat', cursive;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--text-dark);
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+        }
+
+        #prompt-textarea::placeholder {
+            color: var(--brown-light);
+            opacity: 0.7;
+        }
+
+        #prompt-textarea:focus {
+            border-color: var(--brown-light);
+            background: #faf6f0;
+            box-shadow: 0 0 0 4px rgba(139, 97, 68, 0.08), 0 2px 12px rgba(139, 97, 68, 0.06);
+        }
+
+        /* Char counter */
+        .char-counter {
+            position: absolute;
+            bottom: 12px;
+            right: 14px;
+            font-size: 0.7rem;
+            color: var(--text-soft);
+            opacity: 0.6;
+            font-weight: 400;
+        }
+
+        /* ─── Suggestion chips ──────────────────────────────────────── */
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 26px;
+        }
+
+        .chip {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-mid);
+            background: rgba(196, 154, 120, 0.12);
+            border: 1px solid rgba(196, 154, 120, 0.25);
+            border-radius: 20px;
+            padding: 5px 12px;
+            cursor: pointer;
+            transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+            user-select: none;
+        }
+
+        .chip:hover {
+            background: rgba(139, 97, 68, 0.15);
+            color: var(--brown);
+            border-color: rgba(139, 97, 68, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* ─── Create Button ─────────────────────────────────────────── */
+        #create-btn {
+            width: 100%;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--brown) 0%, #a0704f 100%);
+            color: var(--white-warm);
+            border: none;
+            border-radius: var(--radius-btn);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: background var(--transition), transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+            box-shadow: 0 4px 18px rgba(139, 97, 68, 0.35), 0 1px 4px rgba(139, 97, 68, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #create-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, transparent 60%);
+            border-radius: inherit;
+            pointer-events: none;
+        }
+
+        #create-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--brown-dark) 0%, var(--brown) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(139, 97, 68, 0.45), 0 2px 8px rgba(139, 97, 68, 0.25);
+        }
+
+        #create-btn:active:not(:disabled) {
+            transform: translateY(0px);
+            box-shadow: 0 3px 12px rgba(139, 97, 68, 0.3);
+        }
+
+        #create-btn .btn-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        /* ─── Generating State ──────────────────────────────────────── */
+        #generating-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 0 8px;
+            animation: fadeIn 0.5s ease both;
+        }
+
+        .generating-text {
+            font-family: 'Caveat', cursive;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-mid);
+            text-align: center;
+        }
+
+        /* Animated dots */
+        .dots-loader {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dots-loader .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--brown-light);
+            animation: dotPulse 1.4s ease-in-out infinite;
+        }
+
+        .dots-loader .dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .dots-loader .dot:nth-child(2) {
+            animation-delay: 0.2s;
+            background: var(--sage);
+        }
+
+        .dots-loader .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dotPulse {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.6);
+                opacity: 0.4;
+            }
+
+            40% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        /* Spinning ring */
+        .ring-loader {
+            width: 56px;
+            height: 56px;
+        }
+
+        .ring-loader svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .ring-track {
+            fill: none;
+            stroke: rgba(139, 97, 68, 0.12);
+            stroke-width: 4;
+        }
+
+        .ring-spin {
+            fill: none;
+            stroke: url(#ringGrad);
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-dasharray: 55 83;
+            transform-origin: center;
+            animation: spinRing 1.8s linear infinite;
+        }
+
+        @keyframes spinRing {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-bar-wrap {
+            width: 100%;
+            background: rgba(196, 154, 120, 0.15);
+            border-radius: 20px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 20px;
+            background: linear-gradient(90deg, var(--sage-light), var(--brown-light), var(--sage-light));
+            background-size: 200% 100%;
+            animation: shimmer 2s linear infinite;
+            width: 100%;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% center;
+            }
+
+            100% {
+                background-position: -200% center;
+            }
+        }
+
+        .timer-text {
+            font-size: 0.78rem;
+            color: var(--text-soft);
+            font-weight: 400;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* ─── Result State ──────────────────────────────────────────── */
+        #result-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 22px;
+            animation: fadeIn 0.6s ease both;
+        }
+
+        .result-label {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .result-label-text {
+            font-family: 'Caveat', cursive;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-mid);
+        }
+
+        .result-badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--sage);
+            background: rgba(125, 155, 118, 0.12);
+            border: 1px solid rgba(125, 155, 118, 0.25);
+            border-radius: 20px;
+            padding: 3px 10px;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        #generated-img {
+            width: 100%;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(100, 65, 35, 0.18), 0 2px 8px rgba(100, 65, 35, 0.10);
+            border: 1px solid rgba(200, 175, 148, 0.3);
+            display: block;
+            animation: fadeInScale 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.94) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        #download-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 32px;
+            background: transparent;
+            color: var(--brown);
+            border: 2px solid var(--brown-light);
+            border-radius: var(--radius-btn);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 600;
+            text-decoration: none;
+            letter-spacing: 0.4px;
+            cursor: pointer;
+            transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+        }
+
+        #download-link svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        #download-link:hover {
+            background: var(--brown);
+            color: var(--white-warm);
+            border-color: var(--brown);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 97, 68, 0.3);
+        }
+
+        /* ─── Try Again button ──────────────────────────────────────── */
+        #try-again-btn {
+            background: none;
+            border: none;
+            color: var(--text-soft);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            transition: color var(--transition);
+        }
+
+        #try-again-btn:hover {
+            color: var(--brown);
+        }
+
+        /* ─── Divider ───────────────────────────────────────────────── */
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(175, 145, 115, 0.3), transparent);
+            margin: 4px 0;
+        }
+
+        /* ─── Error Message ─────────────────────────────────────────── */
+        .error-msg {
+            display: none;
+            font-size: 0.82rem;
+            color: #c0624a;
+            background: rgba(192, 98, 74, 0.08);
+            border: 1px solid rgba(192, 98, 74, 0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 14px;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* ─── Footer ────────────────────────────────────────────────── */
+        footer {
+            position: relative;
+            z-index: 1;
+            margin-top: 36px;
+            text-align: center;
+        }
+
+        .footer-text {
+            font-size: 0.78rem;
+            color: var(--text-soft);
+            opacity: 0.7;
+        }
+
+        .footer-text a {
+            color: var(--sage);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer-dot {
+            margin: 0 6px;
+            opacity: 0.5;
+        }
+
+        /* ─── Utility Animations ────────────────────────────────────── */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ─── Responsive ────────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            body {
+                padding: 28px 16px 50px;
+            }
+
+            .card {
+                padding: 30px 22px 26px;
+                border-radius: 22px;
+            }
+
+            .card-title {
+                font-size: 1.55rem;
+            }
+
+            .logo-name {
+                font-size: 1.7rem;
+            }
+
+            #prompt-textarea {
+                font-size: 1.1rem;
+                min-height: 110px;
+            }
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ═══ Header ═══════════════════════════════════════════════════ -->
+    <header>
+        <div class="logo">
+            <div class="logo-icon">
+                <!-- Sparkle / layers icon -->
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+                </svg>
+            </div>
+            <span class="logo-name">Craft</span>
+        </div>
+        <p class="tagline">AI-powered thumbnail generation, made with care ✦</p>
+        <div class="deco-dots">
+            <span></span><span></span><span></span>
+        </div>
+    </header>
+
+    <!-- ═══ Main Card ═════════════════════════════════════════════════ -->
+    <main>
+        <div class="card" id="main-card" role="main">
+
+            <div class="card-header">
+                <h1 class="card-title">Craft your thumbnail ✦</h1>
+                <p class="card-subtitle">Describe your vision — we'll bring it to life.</p>
+            </div>
+
+            <!-- ── Input phase ── -->
+            <div id="input-phase">
+                <div class="step-indicator">
+                    <span class="step-pill">Step 1</span>
+                    <span style="font-size:0.75rem;color:var(--text-soft);">Describe your thumbnail</span>
+                </div>
+
+                <div class="input-area">
+                    <label class="input-label" for="prompt-textarea">Your idea</label>
+                    <textarea id="prompt-textarea" rows="4" maxlength="500" placeholder="What should your thumbnail show?" aria-label="Describe your thumbnail idea" spellcheck="true"></textarea>
+                    <span class="char-counter" id="char-counter">0 / 500</span>
+                </div>
+
+                <p style="font-size:0.75rem;color:var(--text-soft);margin-bottom:10px;font-weight:500;">✦ Need inspiration?</p>
+                <div class="suggestions" id="suggestions" role="list" aria-label="Suggestion chips">
+                    <button class="chip" role="listitem">☕ Cozy café morning</button>
+                    <button class="chip" role="listitem">🏔️ Mountain adventure</button>
+                    <button class="chip" role="listitem">⚡ Tech review gadget</button>
+                    <button class="chip" role="listitem">🍳 Recipe cooking</button>
+                    <button class="chip" role="listitem">🖥️ Productivity setup</button>
+                </div>
+
+                <div class="divider"></div>
+                <div style="height:18px;"></div>
+
+                <button id="create-btn" aria-label="Generate thumbnail">
+                    <span class="btn-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;fill:currentColor">
+                            <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4z" />
+                        </svg>
+                    </span>
+                    Create Thumbnail
+                </button>
+
+                <div class="error-msg" id="error-msg" role="alert" aria-live="polite">
+                    ✦ Something went wrong. Please try again in a moment.
+                </div>
+            </div>
+
+            <!-- ── Generating phase ── -->
+            <div id="generating-state" role="status" aria-live="polite" aria-label="Generating thumbnail">
+
+                <div class="ring-loader">
+                    <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#c49a78" />
+                                <stop offset="100%" stop-color="#7d9b76" />
+                            </linearGradient>
+                        </defs>
+                        <circle class="ring-track" cx="28" cy="28" r="24" />
+                        <circle class="ring-spin" cx="28" cy="28" r="24" />
+                    </svg>
+                </div>
+
+                <p class="generating-text">Crafting your thumbnail<span id="ellipsis"></span></p>
+
+                <div class="dots-loader" aria-hidden="true">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+
+                <div style="width:100%">
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <p class="timer-text" id="timer-text">This may take about a minute…</p>
+                </div>
+
+            </div>
+
+            <!-- ── Result phase ── -->
+            <div id="result-state">
+                <div class="result-label">
+                    <span class="result-label-text">✦ Your thumbnail</span>
+                    <span class="result-badge">Ready</span>
+                </div>
+
+                <img id="generated-img" src="" alt="Generated thumbnail" />
+
+                <a id="download-link" href="#" download="thumbnail.png" aria-label="Download your generated thumbnail">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Download Thumbnail
+                </a>
+
+                <button id="try-again-btn" aria-label="Create another thumbnail">↺ Create another one</button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ═══ Footer ════════════════════════════════════════════════════ -->
+    <footer>
+        <p class="footer-text">
+            Made with warmth ✦
+            <span class="footer-dot">·</span>
+            <a href="#">Craft Studio</a>
+            <span class="footer-dot">·</span>
+            AI-powered
+        </p>
+    </footer>
+
+    <!-- ═══ JavaScript ════════════════════════════════════════════════ -->
+    <script>
+        const ENDPOINT = 'https://workflow.ccbp.in/webhook-test/122e1de2-cd2b-4a5f-bb5e-95029a1fa073';
+
+        // ── DOM refs ──────────────────────────────────────────────────
+        const textarea = document.getElementById('prompt-textarea');
+        const charCounter = document.getElementById('char-counter');
+        const createBtn = document.getElementById('create-btn');
+        const inputPhase = document.getElementById('input-phase');
+        const generatingState = document.getElementById('generating-state');
+        const resultState = document.getElementById('result-state');
+        const generatedImg = document.getElementById('generated-img');
+        const downloadLink = document.getElementById('download-link');
+        const tryAgainBtn = document.getElementById('try-again-btn');
+        const errorMsg = document.getElementById('error-msg');
+        const timerText = document.getElementById('timer-text');
+        const ellipsisEl = document.getElementById('ellipsis');
+
+        // ── Char counter ──────────────────────────────────────────────
+        textarea.addEventListener('input', () => {
+            charCounter.textContent = `${textarea.value.length} / 500`;
+        });
+
+        // ── Suggestion chips ──────────────────────────────────────────
+        document.getElementById('suggestions').addEventListener('click', e => {
+            const chip = e.target.closest('.chip');
+            if (!chip) return;
+            // Strip emoji from start
+            const raw = chip.textContent.trim();
+            const text = raw.replace(/^[\u{1F300}-\u{1FFFF}\u{2600}-\u{27BF}\uFE0F ]+/gu, '').trim();
+            textarea.value = text;
+            charCounter.textContent = `${textarea.value.length} / 500`;
+            textarea.focus();
+        });
+
+        // ── Ellipsis animation ────────────────────────────────────────
+        let ellipsisTimer = null;
+
+        function startEllipsis() {
+            let count = 0;
+            ellipsisEl.textContent = '';
+            ellipsisTimer = setInterval(() => {
+                count = (count + 1) % 4;
+                ellipsisEl.textContent = '.'.repeat(count);
+            }, 500);
+        }
+
+        function stopEllipsis() {
+            clearInterval(ellipsisTimer);
+            if (ellipsisEl) ellipsisEl.textContent = '';
+        }
+
+        // ── Elapsed timer ─────────────────────────────────────────────
+        let elapsedTimer = null;
+
+        function startTimer() {
+            let secs = 0;
+            timerText.textContent = 'This may take about a minute…';
+            elapsedTimer = setInterval(() => {
+                secs++;
+                timerText.textContent = secs < 60 ?
+                    `Generating… ${secs}s elapsed` :
+                    `Almost there… ${secs}s elapsed`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(elapsedTimer);
+        }
+
+        // ── Phase transitions ─────────────────────────────────────────
+        function showGenerating() {
+            inputPhase.style.display = 'none';
+            generatingState.style.display = 'flex';
+            resultState.style.display = 'none';
+            errorMsg.style.display = 'none';
+            startEllipsis();
+            startTimer();
+        }
+
+        function showResult(imgUrl, fileName) {
+            stopEllipsis();
+            stopTimer();
+            generatingState.style.display = 'none';
+            resultState.style.display = 'flex';
+            generatedImg.src = imgUrl;
+            downloadLink.href = imgUrl;
+            downloadLink.download = fileName || 'thumbnail.png';
+        }
+
+        function showInput() {
+            stopEllipsis();
+            stopTimer();
+            generatingState.style.display = 'none';
+            resultState.style.display = 'none';
+            inputPhase.style.display = 'block';
+        }
+
+        function showError(msg) {
+            stopEllipsis();
+            stopTimer();
+            generatingState.style.display = 'none';
+            inputPhase.style.display = 'block';
+            errorMsg.style.display = 'block';
+            errorMsg.textContent = `✦ ${msg || 'Something went wrong. Please try again.'}`;
+        }
+
+        // ── Main Create action ────────────────────────────────────────
+        createBtn.addEventListener('click', async () => {
+            const prompt = textarea.value.trim();
+            if (!prompt) {
+                textarea.focus();
+                textarea.style.borderColor = 'rgba(192, 98, 74, 0.5)';
+                setTimeout(() => {
+                    textarea.style.borderColor = '';
+                }, 1800);
+                return;
+            }
+
+            errorMsg.style.display = 'none';
+            showGenerating();
+
+            try {
+                const response = await fetch(ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+
+                const contentType = response.headers.get('content-type') || '';
+
+                if (contentType.startsWith('image/')) {
+                    // Direct image blob in response
+                    const blob = await response.blob();
+                    const ext = contentType.split('/')[1]?.split('+')[0] || 'png';
+                    showResult(URL.createObjectURL(blob), `thumbnail.${ext}`);
+
+                } else if (contentType.includes('application/json')) {
+                    const data = await response.json();
+                    const imgUrl =
+                        data.image_url || data.imageUrl || data.url ||
+                        data.image || data.thumbnail || null;
+
+                    if (imgUrl) {
+                        showResult(imgUrl, 'thumbnail.png');
+                    } else if (data.base64 || data.image_base64) {
+                        const b64 = data.base64 || data.image_base64;
+                        const mime = data.mime_type || 'image/png';
+                        showResult(`data:${mime};base64,${b64}`, 'thumbnail.png');
+                    } else {
+                        throw new Error('No image found in the response.');
+                    }
+
+                } else {
+                    // Try treating raw body as image bytes
+                    const blob = await response.blob();
+                    showResult(URL.createObjectURL(blob), 'thumbnail.png');
+                }
+
+            } catch (err) {
+                console.error('Generation error:', err);
+                showError('Something went wrong. Please try again in a moment.');
+            }
+        });
+
+        // ── Try Again ─────────────────────────────────────────────────
+        tryAgainBtn.addEventListener('click', () => {
+            if (generatedImg.src.startsWith('blob:')) {
+                URL.revokeObjectURL(generatedImg.src);
+            }
+            generatedImg.src = '';
+            showInput();
+        });
+
+        // ── Enter = submit (Shift+Enter = newline) ────────────────────
+        textarea.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                createBtn.click();
+            }
+        });
+    </script>
+</body>
+
+</html>
